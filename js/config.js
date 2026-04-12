@@ -1,4 +1,3 @@
 // ─── API Configuration ────────────────────────────────────────
-// Etter deployment til Railway: bytt ut URL-en under
-// Eksempel: 'https://contractflow-api.up.railway.app'
-window.CF_API_BASE = 'http://localhost:3000';
+// Backend: Wix Velo HTTP Functions på Pizzapappa.no
+window.CF_API_BASE = 'https://www.pizzapappa.no/_functions';

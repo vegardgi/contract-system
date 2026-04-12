@@ -1,7 +1,7 @@
 /* ─── ContractFlow API client ────────────────────────────────── */
 (function () {
   function base() {
-    return (window.CF_API_BASE || 'http://localhost:3000').replace(/\/$/, '');
+    return (window.CF_API_BASE || 'https://www.pizzapappa.no/_functions').replace(/\/$/, '');
   }
 
   async function req(method, path, body) {
@@ -15,11 +15,11 @@
   }
 
   window.api = {
-    list:   ()           => req('GET',    '/api/contracts'),
-    get:    (id)         => req('GET',    `/api/contracts/${id}`),
-    create: (body)       => req('POST',   '/api/contracts', body),
-    update: (id, body)   => req('PUT',    `/api/contracts/${id}`, body),
-    remove: (id)         => req('DELETE', `/api/contracts/${id}`),
-    sign:   (id, body)   => req('POST',   `/api/contracts/${id}/sign`, body),
+    list:   ()           => req('GET',    '/contracts'),
+    get:    (id)         => req('GET',    `/contract?id=${encodeURIComponent(id)}`),
+    create: (body)       => req('POST',   '/contract', body),
+    update: (id, body)   => req('PUT',    `/contract?id=${encodeURIComponent(id)}`, body),
+    remove: (id)         => req('DELETE', `/contract?id=${encodeURIComponent(id)}`),
+    sign:   (id, body)   => req('POST',   `/sign?id=${encodeURIComponent(id)}`, body),
   };
 })();
