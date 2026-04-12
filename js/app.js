@@ -351,20 +351,19 @@ function showLinkResult(id) {
 }
 
 /* ─── Password gate ──────────────────────────────────────────── */
-const CF_PASSWORD = 'bEkre9-wocmon-bewhep';
+const CF_PASSWORD    = 'bEkre9-wocmon-bewhep';
 const CF_SESSION_KEY = 'cf_auth';
 
-function initPasswordGate() {
+function initPasswordGate(onUnlock) {
   if (sessionStorage.getItem(CF_SESSION_KEY) === '1') {
-    // Already authenticated this session
     document.getElementById('pw-gate').style.display = 'none';
-    return true;
+    return; // already authenticated — onUnlock not needed
   }
-  // Show gate, hide content
-  document.getElementById('pw-gate').style.display = 'flex';
-  document.querySelector('.header').style.display = 'none';
-  document.querySelector('.main').style.display   = 'none';
-  document.getElementById('toast').style.display  = 'none';
+
+  // Hide app, show gate
+  document.getElementById('pw-gate').style.display   = 'flex';
+  document.querySelector('.header').style.visibility = 'hidden';
+  document.querySelector('.main').style.visibility   = 'hidden';
 
   const input  = document.getElementById('pw-input');
   const errEl  = document.getElementById('pw-error');
@@ -373,11 +372,10 @@ function initPasswordGate() {
   function tryLogin() {
     if (input.value === CF_PASSWORD) {
       sessionStorage.setItem(CF_SESSION_KEY, '1');
-      document.getElementById('pw-gate').style.display  = 'none';
-      document.querySelector('.header').style.display   = '';
-      document.querySelector('.main').style.display     = '';
-      document.getElementById('toast').style.display    = '';
-      renderDashboard();
+      document.getElementById('pw-gate').style.display   = 'none';
+      document.querySelector('.header').style.visibility = '';
+      document.querySelector('.main').style.visibility   = '';
+      onUnlock();
     } else {
       errEl.textContent = 'Feil passord. Prøv igjen.';
       input.value = '';
@@ -390,14 +388,23 @@ function initPasswordGate() {
   submit.addEventListener('click', tryLogin);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
   setTimeout(() => input.focus(), 50);
-  return false;
 }
 
 /* ─── Init ───────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', async () => {
-  const authenticated = initPasswordGate();
-  if (!authenticated) return;
-  await renderDashboard();
+document.addEventListener('DOMContentLoaded', () => {
+  // Register all event listeners immediately (regardless of auth state)
+  setupEventListeners();
+
+  // Then handle password gate — passes renderDashboard as the unlock callback
+  initPasswordGate(renderDashboard);
+
+  // If already authenticated, load dashboard right away
+  if (sessionStorage.getItem(CF_SESSION_KEY) === '1') {
+    renderDashboard();
+  }
+});
+
+function setupEventListeners() {
 
   /* New contract */
   document.getElementById('btn-new-contract').addEventListener('click', () => openEditor(null));
@@ -513,4 +520,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('contract-title').addEventListener('input', debounce(async () => {
     if (state.currentId !== null) await saveCurrentDraft();
   }, 1000));
-});
+} // end setupEventListeners
