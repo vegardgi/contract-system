@@ -179,22 +179,46 @@
             <div id="signature-block" class="signature-block" style="display:none">
               <div class="sig-block-divider">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 3l3 3" stroke="currentColor" stroke-width="1.5"/></svg>
-                Signatur
+                Signaturer
               </div>
-              <div class="sig-block-body">
-                <div class="sig-block-meta">
-                  <div class="sig-meta-item">
-                    <span class="sig-meta-label">Signert av</span>
-                    <span class="sig-meta-value" id="sig-signer-name">—</span>
+              <div class="sig-block-body sig-block-body--dual">
+
+                <!-- Customer signature -->
+                <div class="sig-side">
+                  <p class="sig-side-label">Kunde</p>
+                  <div class="sig-block-meta">
+                    <div class="sig-meta-item">
+                      <span class="sig-meta-label">Signert av</span>
+                      <span class="sig-meta-value" id="sig-signer-name">—</span>
+                    </div>
+                    <div class="sig-meta-item">
+                      <span class="sig-meta-label">Dato</span>
+                      <span class="sig-meta-value" id="sig-signed-date">—</span>
+                    </div>
                   </div>
-                  <div class="sig-meta-item">
-                    <span class="sig-meta-label">Dato</span>
-                    <span class="sig-meta-value" id="sig-signed-date">—</span>
+                  <div class="sig-block-image-wrap">
+                    <img id="sig-image" class="sig-block-image" alt="Signatur">
                   </div>
                 </div>
-                <div class="sig-block-image-wrap">
-                  <img id="sig-image" class="sig-block-image" alt="Signatur">
+
+                <!-- Sender signature -->
+                <div class="sig-side">
+                  <p class="sig-side-label">Avsender</p>
+                  <div class="sig-block-meta">
+                    <div class="sig-meta-item">
+                      <span class="sig-meta-label">Signert av</span>
+                      <span class="sig-meta-value">Vegard Giskehaug</span>
+                    </div>
+                    <div class="sig-meta-item">
+                      <span class="sig-meta-label">Dato</span>
+                      <span class="sig-meta-value" id="sig-sender-date">—</span>
+                    </div>
+                  </div>
+                  <div class="sig-block-image-wrap">
+                    <span class="sender-sig-display">Vegard Giskehaug</span>
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>

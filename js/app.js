@@ -311,6 +311,9 @@ async function openEditor(id) {
     document.getElementById('sig-signed-date').textContent  = new Date(contract.signedAt).toLocaleDateString('no-NO', {
       day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
+    document.getElementById('sig-sender-date').textContent  = contract.sentAt
+      ? new Date(contract.sentAt).toLocaleDateString('no-NO', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '—';
     document.getElementById('sig-image').src = contract.signature.data;
     sigBlock.style.display = 'block';
   } else {
@@ -558,6 +561,16 @@ async function downloadAdminPdf(c, btn) {
       : '—';
     const sigDataUrl = c.signature?.data || null;
 
+    // Ensure Dancing Script is loaded for PDF render
+    if (!document.querySelector('link[data-pdf-font]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.dataset.pdfFont = '1';
+      link.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap';
+      document.head.appendChild(link);
+      await new Promise(r => setTimeout(r, 800));
+    }
+
     const wrap = document.createElement('div');
     wrap.style.cssText = [
       'position:fixed','left:-9999px','top:0',
@@ -601,7 +614,8 @@ async function downloadAdminPdf(c, btn) {
         ${c.content || ''}
       </div>
 
-      <div style="border-top:2px dashed #F0C4A8;padding-top:26px">
+      <!-- Dual signature block -->
+      <div style="border-top:2px dashed #F0C4A8;padding-top:22px">
         <div style="display:flex;align-items:center;gap:7px;font-size:0.62rem;
                     font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
                     color:#C8562A;margin-bottom:18px">
@@ -609,29 +623,48 @@ async function downloadAdminPdf(c, btn) {
             <path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z"
                   stroke="#C8562A" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
-          Signatur
+          Signaturer
         </div>
-        <div style="display:flex;gap:36px;margin-bottom:18px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;
-                        letter-spacing:0.08em;color:#B89080;margin-bottom:3px">Signert av</div>
-            <div style="font-size:0.88rem;font-weight:600">${recipientName.replace(/</g,'&lt;')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #F0C4A8;border-radius:10px;overflow:hidden">
+
+          <!-- Customer -->
+          <div style="padding:18px 22px;border-right:1px solid #F0C4A8">
+            <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#B89080;margin-bottom:10px">Kunde</div>
+            <div style="margin-bottom:4px">
+              <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Signert av</div>
+              <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${recipientName.replace(/</g,'&lt;')}</div>
+            </div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Dato</div>
+              <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${signedDate}</div>
+            </div>
+            ${sigDataUrl
+              ? `<div style="background:#FDFAF6;border:1.5px solid #F0DDD0;border-radius:7px;padding:10px 14px;display:inline-block">
+                   <img src="${sigDataUrl}" style="max-height:60px;max-width:220px;display:block">
+                 </div>`
+              : ''}
           </div>
-          <div>
-            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;
-                        letter-spacing:0.08em;color:#B89080;margin-bottom:3px">Dato</div>
-            <div style="font-size:0.88rem;font-weight:600">${signedDate}</div>
+
+          <!-- Sender -->
+          <div style="padding:18px 22px;background:#FDFAF6">
+            <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#B89080;margin-bottom:10px">Avsender</div>
+            <div style="margin-bottom:4px">
+              <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Signert av</div>
+              <div style="font-size:0.85rem;font-weight:600;margin-top:2px">Vegard Giskehaug</div>
+            </div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Dato</div>
+              <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${c.sentAt ? new Date(c.sentAt).toLocaleDateString('no-NO',{day:'numeric',month:'long',year:'numeric'}) : signedDate}</div>
+            </div>
+            <div style="font-family:'Dancing Script',cursive;font-size:2rem;color:#2C1A0E;line-height:1.2;padding:4px 0">
+              Vegard Giskehaug
+            </div>
           </div>
+
         </div>
-        ${sigDataUrl
-          ? `<div style="background:#FDFAF6;border:1.5px solid #F0DDD0;border-radius:8px;
-                         padding:14px 20px;display:inline-block">
-               <img src="${sigDataUrl}" style="max-height:72px;max-width:280px;display:block">
-             </div>`
-          : ''}
       </div>
 
-      <div style="margin-top:36px;padding-top:14px;border-top:1px solid #E8DDD4;
+      <div style="margin-top:32px;padding-top:14px;border-top:1px solid #E8DDD4;
                   font-size:0.65rem;color:#B89080;display:flex;justify-content:space-between">
         <span>Pizzapappa – kontraktsignering</span>
         <span>Signert: ${signedDate}</span>
