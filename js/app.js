@@ -286,6 +286,24 @@ async function openEditor(id) {
   document.getElementById('editor-created').textContent  = formatDate(contract.createdAt);
   document.getElementById('btn-proceed-send').style.display = contract.status === 'signed' ? 'none' : '';
 
+  // Sidebar link + PDF sections
+  const linkSection = document.getElementById('sidebar-link-section');
+  const pdfSection  = document.getElementById('sidebar-pdf-section');
+  const isSentOrSigned = contract.status === 'sent' || contract.status === 'signed';
+  linkSection.style.display = isSentOrSigned ? '' : 'none';
+  pdfSection.style.display  = contract.status === 'signed' ? '' : 'none';
+
+  // Wire copy-link button
+  document.getElementById('btn-editor-copy-link').onclick = () => {
+    copyToClipboard(buildSigningLink(contract.id));
+    showToast('Signeringslenke kopiert!', 'success');
+  };
+
+  // Wire PDF button
+  document.getElementById('btn-editor-pdf').onclick = function () {
+    downloadAdminPdf(contract, this);
+  };
+
   // Signature block
   const sigBlock = document.getElementById('signature-block');
   if (contract.status === 'signed' && contract.signature?.data) {
@@ -521,3 +539,144 @@ function setupEventListeners() {
     if (state.currentId !== null) await saveCurrentDraft();
   }, 1000));
 } // end setupEventListeners
+
+/* ─── Admin PDF download ─────────────────────────────────────── */
+async function downloadAdminPdf(c, btn) {
+  const origHTML = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="animation:spin 0.8s linear infinite"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="14 8"/></svg> Genererer…`;
+  }
+
+  try {
+    const recipientName = c.recipient?.name || '—';
+    const signedDate = c.signedAt
+      ? new Date(c.signedAt).toLocaleDateString('no-NO', {
+          day: 'numeric', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        })
+      : '—';
+    const sigDataUrl = c.signature?.data || null;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = [
+      'position:fixed','left:-9999px','top:0',
+      'width:794px','background:#fff',
+      'font-family:Arial,Helvetica,sans-serif',
+      'font-size:13px','line-height:1.65',
+      'color:#2C1A0E','padding:52px 64px 64px',
+    ].join(';');
+
+    wrap.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding-bottom:18px;border-bottom:2.5px solid #C8562A;margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:30px;height:30px;background:#FDF0EA;border-radius:6px;
+                      display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+              <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"
+                    fill="#C8562A" opacity="0.25"/>
+              <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="#C8562A"/>
+              <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"
+                    stroke="#C8562A" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+          <span style="font-size:0.9rem;font-weight:700;letter-spacing:-0.01em">
+            Pizzapappa – kontraktsignering
+          </span>
+        </div>
+        <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;
+                     letter-spacing:0.1em;color:#5A8330;background:#EDF4E3;
+                     border:1px solid rgba(90,131,48,0.2);padding:4px 11px;border-radius:100px">
+          ✓ Signert
+        </span>
+      </div>
+
+      <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;
+                 margin-bottom:24px;line-height:1.2">
+        ${String(c.title || 'Uten tittel').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+      </h1>
+
+      <div style="margin-bottom:36px;font-size:13px;line-height:1.7;color:#2C1A0E">
+        ${c.content || ''}
+      </div>
+
+      <div style="border-top:2px dashed #F0C4A8;padding-top:26px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:0.62rem;
+                    font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+                    color:#C8562A;margin-bottom:18px">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z"
+                  stroke="#C8562A" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          Signatur
+        </div>
+        <div style="display:flex;gap:36px;margin-bottom:18px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;
+                        letter-spacing:0.08em;color:#B89080;margin-bottom:3px">Signert av</div>
+            <div style="font-size:0.88rem;font-weight:600">${recipientName.replace(/</g,'&lt;')}</div>
+          </div>
+          <div>
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;
+                        letter-spacing:0.08em;color:#B89080;margin-bottom:3px">Dato</div>
+            <div style="font-size:0.88rem;font-weight:600">${signedDate}</div>
+          </div>
+        </div>
+        ${sigDataUrl
+          ? `<div style="background:#FDFAF6;border:1.5px solid #F0DDD0;border-radius:8px;
+                         padding:14px 20px;display:inline-block">
+               <img src="${sigDataUrl}" style="max-height:72px;max-width:280px;display:block">
+             </div>`
+          : ''}
+      </div>
+
+      <div style="margin-top:36px;padding-top:14px;border-top:1px solid #E8DDD4;
+                  font-size:0.65rem;color:#B89080;display:flex;justify-content:space-between">
+        <span>Pizzapappa – kontraktsignering</span>
+        <span>Signert: ${signedDate}</span>
+      </div>
+    `;
+
+    document.body.appendChild(wrap);
+
+    const canvas = await html2canvas(wrap, {
+      scale: 2, useCORS: true,
+      backgroundColor: '#ffffff', logging: false, imageTimeout: 0,
+    });
+    document.body.removeChild(wrap);
+
+    const { jsPDF } = window.jspdf;
+    const pdf  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pgW  = pdf.internal.pageSize.getWidth();
+    const pgH  = pdf.internal.pageSize.getHeight();
+    const imgW = pgW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+
+    let srcY = 0, page = 0;
+    while (srcY < imgH) {
+      if (page > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG',
+        0, -srcY, imgW, imgH, '', 'FAST');
+      srcY += pgH;
+      page++;
+    }
+
+    const safeName = (c.title || 'kontrakt')
+      .replace(/[^\w\sæøåÆØÅ-]/g, '').trim() || 'kontrakt';
+    pdf.save(`${safeName}.pdf`);
+
+  } catch (err) {
+    console.error(err);
+    showToast('Kunne ikke generere PDF', 'danger');
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
+}
+
+/* ─── Spin keyframe for PDF button ──────────────────────────── */
+(function () {
+  const s = document.createElement('style');
+  s.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+  document.head.appendChild(s);
+})();
