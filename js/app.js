@@ -2,8 +2,6 @@
    ContractFlow – Main App
    ═══════════════════════════════════════════════════════════ */
 
-const STORAGE_KEY = 'contractflow_v1';
-
 const TEMPLATES = {
   service: {
     title: 'Tjenesteavtale',
@@ -72,7 +70,6 @@ const TEMPLATES = {
 </ul>
 
 <h3>2. Leveranser og tidsplan</h3>
-<p>Følgende leveranser skal ferdigstilles:</p>
 <ul>
   <li><strong>[Leveranse 1]</strong> – Frist: [dato]</li>
   <li><strong>[Leveranse 2]</strong> – Frist: [dato]</li>
@@ -95,30 +92,15 @@ const TEMPLATES = {
 /* ─── State ──────────────────────────────────────────────────── */
 let state = {
   contracts:      [],
-  currentId:      null,   // id of contract being edited/sent
+  currentId:      null,   // null = new (not yet saved to API)
   currentFilter:  'all',
   deleteTargetId: null,
 };
 
-/* ─── Storage ────────────────────────────────────────────────── */
-function loadContracts() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    state.contracts = raw ? JSON.parse(raw) : [];
-  } catch { state.contracts = []; }
-}
-function saveContracts() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.contracts));
-}
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
 /* ─── Helpers ────────────────────────────────────────────────── */
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const page = document.getElementById(`page-${name}`);
-  if (page) page.classList.add('active');
+  document.getElementById(`page-${name}`)?.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -126,9 +108,9 @@ let toastTimer;
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ` toast--${type}` : '');
+  t.className   = 'toast show' + (type ? ` toast--${type}` : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2800);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 function formatDate(ts) {
@@ -139,44 +121,68 @@ function formatDate(ts) {
 }
 
 function excerpt(html, len = 100) {
-  const tmp = document.createElement('div');
+  const tmp  = document.createElement('div');
   tmp.innerHTML = html;
   const text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
   return text.length > len ? text.slice(0, len) + '…' : text;
 }
 
-/* ─── Dashboard ──────────────────────────────────────────────── */
-function renderDashboard() {
-  const grid      = document.getElementById('contracts-grid');
-  const emptyEl   = document.getElementById('empty-state');
-  const all       = state.contracts;
-  const filtered  = state.currentFilter === 'all'
-    ? all
-    : all.filter(c => c.status === state.currentFilter);
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
-  // Stats
-  document.getElementById('stat-total').textContent  = all.length;
-  document.getElementById('stat-sent').textContent   = all.filter(c => c.status === 'sent').length;
-  document.getElementById('stat-signed').textContent = all.filter(c => c.status === 'signed').length;
-
-  // Clear old cards (keep empty-state node)
-  [...grid.children].forEach(ch => {
-    if (ch.id !== 'empty-state') ch.remove();
+function copyToClipboard(text) {
+  navigator.clipboard?.writeText(text).catch(() => fallbackCopy(text)) ?? fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const ta = Object.assign(document.createElement('textarea'), {
+    value: text, style: 'position:fixed;opacity:0'
   });
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+}
 
-  if (filtered.length === 0) {
-    emptyEl.style.display = '';
-    return;
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function buildSigningLink(id) {
+  const base = window.location.href.replace(/\/[^/]*$/, '');
+  return `${base}/sign.html?id=${id}`;
+}
+
+/* ─── Dashboard ──────────────────────────────────────────────── */
+async function renderDashboard() {
+  try {
+    state.contracts = await api.list();
+  } catch {
+    showToast('Kunne ikke koble til serveren', 'danger');
+    state.contracts = [];
   }
+
+  const grid     = document.getElementById('contracts-grid');
+  const emptyEl  = document.getElementById('empty-state');
+  const filtered = state.currentFilter === 'all'
+    ? state.contracts
+    : state.contracts.filter(c => c.status === state.currentFilter);
+
+  document.getElementById('stat-total').textContent  = state.contracts.length;
+  document.getElementById('stat-sent').textContent   = state.contracts.filter(c => c.status === 'sent').length;
+  document.getElementById('stat-signed').textContent = state.contracts.filter(c => c.status === 'signed').length;
+
+  [...grid.children].forEach(ch => { if (ch.id !== 'empty-state') ch.remove(); });
+
+  if (filtered.length === 0) { emptyEl.style.display = ''; return; }
   emptyEl.style.display = 'none';
 
-  // Sort: newest first
-  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
-
-  sorted.forEach(contract => {
-    const card = createCard(contract);
-    grid.appendChild(card);
-  });
+  [...filtered]
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .forEach(c => grid.appendChild(createCard(c)));
 }
 
 function createCard(c) {
@@ -184,18 +190,17 @@ function createCard(c) {
   card.className = `contract-card contract-card--${c.status}`;
   card.dataset.id = c.id;
 
-  const badgeClass = `badge badge--${c.status}`;
-  const badgeText  = { draft: 'Utkast', sent: 'Sendt', signed: 'Signert' }[c.status];
-  const snippet    = c.content ? excerpt(c.content) : 'Tomt innhold';
+  const badgeText = { draft: 'Utkast', sent: 'Sendt', signed: 'Signert' }[c.status];
+  const snippet   = c.content ? excerpt(c.content) : 'Tomt innhold';
 
   const recipientInfo = c.recipient?.name
     ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:5px">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 11c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        ${c.recipient.name}
+        ${escapeHtml(c.recipient.name)}
        </div>`
     : '';
 
-  const signedBadge = c.status === 'signed'
+  const signedInfo = c.status === 'signed'
     ? `<div style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:var(--success);margin-top:6px">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 6l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Signert ${formatDate(c.signedAt)}
@@ -205,13 +210,9 @@ function createCard(c) {
   card.innerHTML = `
     <div class="card-header">
       <div class="card-title">${escapeHtml(c.title || 'Uten tittel')}</div>
-      <span class="${badgeClass}">${badgeText}</span>
+      <span class="badge badge--${c.status}">${badgeText}</span>
     </div>
-    <div class="card-body">
-      ${snippet}
-      ${recipientInfo}
-      ${signedBadge}
-    </div>
+    <div class="card-body">${snippet}${recipientInfo}${signedInfo}</div>
     <div class="card-footer">
       <span class="card-date">${formatDate(c.createdAt)}</span>
       <div class="card-actions">
@@ -230,14 +231,9 @@ function createCard(c) {
       </div>
     </div>`;
 
-  // Card click to open editor (not on action buttons)
   card.addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
-    if (btn) {
-      e.stopPropagation();
-      handleCardAction(btn.dataset.action, c.id);
-      return;
-    }
+    if (btn) { e.stopPropagation(); handleCardAction(btn.dataset.action, c.id); return; }
     handleCardAction('edit', c.id);
   });
 
@@ -248,13 +244,10 @@ function handleCardAction(action, id) {
   const contract = state.contracts.find(c => c.id === id);
   if (!contract) return;
 
-  if (action === 'edit') {
-    openEditor(id);
-  } else if (action === 'send') {
-    openSend(id);
-  } else if (action === 'copy-link') {
-    const link = buildSigningLink(id);
-    copyToClipboard(link);
+  if      (action === 'edit')      openEditor(id);
+  else if (action === 'send')      openSend(id);
+  else if (action === 'copy-link') {
+    copyToClipboard(buildSigningLink(id));
     showToast('Signeringslenke kopiert!', 'success');
   } else if (action === 'delete') {
     state.deleteTargetId = id;
@@ -263,43 +256,35 @@ function handleCardAction(action, id) {
 }
 
 /* ─── Editor ─────────────────────────────────────────────────── */
-function openEditor(id) {
+async function openEditor(id) {
   let contract;
+
   if (id) {
-    contract = state.contracts.find(c => c.id === id);
-    if (!contract) return;
+    try {
+      contract = await api.get(id);
+    } catch {
+      showToast('Kunne ikke åpne kontrakt', 'danger');
+      return;
+    }
     state.currentId = id;
   } else {
-    // New contract
-    contract = {
-      id: generateId(),
-      title: '',
-      content: '',
-      status: 'draft',
-      createdAt: Date.now(),
-      recipient: null,
-      sentAt: null,
-      signedAt: null,
-      signature: null,
-    };
-    state.contracts.push(contract);
-    saveContracts();
-    state.currentId = contract.id;
+    // New: don't create in API yet — wait until save
+    state.currentId = null;
+    contract = { title: '', content: '', status: 'draft', createdAt: Date.now() };
   }
 
-  document.getElementById('contract-title').value = contract.title || '';
-  document.getElementById('editor-content').innerHTML =
+  document.getElementById('contract-title').value      = contract.title || '';
+  document.getElementById('editor-content').innerHTML  =
     contract.content || '<p>Start med å skrive kontraktsteksten din her, eller velg en mal fra sidepanelet.</p>';
+  document.getElementById('editor-content').contentEditable =
+    contract.status === 'signed' ? 'false' : 'true';
 
   const badge = document.getElementById('editor-status-badge');
-  badge.className = `badge badge--${contract.status}`;
+  badge.className   = `badge badge--${contract.status}`;
   badge.textContent = { draft: 'Utkast', sent: 'Sendt', signed: 'Signert' }[contract.status];
 
-  document.getElementById('editor-created').textContent = formatDate(contract.createdAt);
-
-  // Toggle send button
-  const sendBtn = document.getElementById('btn-proceed-send');
-  sendBtn.style.display = contract.status === 'signed' ? 'none' : '';
+  document.getElementById('editor-created').textContent  = formatDate(contract.createdAt);
+  document.getElementById('btn-proceed-send').style.display = contract.status === 'signed' ? 'none' : '';
 
   // Signature block
   const sigBlock = document.getElementById('signature-block');
@@ -318,20 +303,33 @@ function openEditor(id) {
   showPage('editor');
 }
 
-function saveCurrentDraft() {
-  const contract = state.contracts.find(c => c.id === state.currentId);
-  if (!contract) return;
-  contract.title   = document.getElementById('contract-title').value.trim() || 'Uten tittel';
-  contract.content = document.getElementById('editor-content').innerHTML;
-  saveContracts();
+async function saveCurrentDraft() {
+  const title   = document.getElementById('contract-title').value.trim() || 'Uten tittel';
+  const content = document.getElementById('editor-content').innerHTML;
+
+  try {
+    let contract;
+    if (state.currentId === null) {
+      contract       = await api.create({ title, content });
+      state.currentId = contract.id;
+    } else {
+      contract = await api.update(state.currentId, { title, content });
+    }
+    return contract;
+  } catch {
+    showToast('Kunne ikke lagre kontrakt', 'danger');
+    throw new Error('save failed');
+  }
 }
 
 /* ─── Send ───────────────────────────────────────────────────── */
-function openSend(id) {
-  saveCurrentDraft();
-  state.currentId = id;
+async function openSend(id) {
+  try {
+    await saveCurrentDraft();
+  } catch { return; }
 
-  // Reset form
+  state.currentId = id ?? state.currentId;
+
   document.getElementById('recipient-name').value  = '';
   document.getElementById('recipient-email').value = '';
   document.getElementById('send-message').value    = '';
@@ -340,106 +338,54 @@ function openSend(id) {
   document.getElementById('err-email').textContent = '';
   document.getElementById('btn-generate-link').textContent = 'Generer signeringslenke';
 
-  // Pre-fill if already has recipient
-  const contract = state.contracts.find(c => c.id === id);
+  // Pre-fill if already sent
+  const contract = state.contracts.find(c => c.id === state.currentId);
   if (contract?.recipient) {
-    document.getElementById('recipient-name').value  = contract.recipient.name || '';
+    document.getElementById('recipient-name').value  = contract.recipient.name  || '';
     document.getElementById('recipient-email').value = contract.recipient.email || '';
-    if (contract.status === 'sent') {
-      showLinkResult(id);
-    }
+    if (contract.status === 'sent') showLinkResult(state.currentId);
   }
 
   showPage('send');
 }
 
-function buildSigningLink(id) {
-  const base = window.location.href.replace(/\/[^/]*$/, '');
-  return `${base}/sign.html?id=${id}`;
-}
-
 function showLinkResult(id) {
-  const linkEl = document.getElementById('signing-link-text');
-  const link   = buildSigningLink(id);
-  linkEl.textContent = link;
-  document.getElementById('link-result').style.display = 'block';
+  document.getElementById('signing-link-text').textContent = buildSigningLink(id);
+  document.getElementById('link-result').style.display     = 'block';
   document.getElementById('btn-generate-link').textContent = 'Regenerer lenke';
 }
 
-/* ─── Utilities ──────────────────────────────────────────────── */
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+/* ─── Init ───────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', async () => {
+  await renderDashboard();
 
-function copyToClipboard(text) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-  } else {
-    fallbackCopy(text);
-  }
-}
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity  = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand('copy');
-  ta.remove();
-}
-
-/* ─── Event listeners ────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-  loadContracts();
-  renderDashboard();
-
-  /* New contract buttons */
+  /* New contract */
   document.getElementById('btn-new-contract').addEventListener('click', () => openEditor(null));
-  document.getElementById('btn-empty-new').addEventListener('click', () => openEditor(null));
+  document.getElementById('btn-empty-new').addEventListener('click',    () => openEditor(null));
 
   /* Back buttons */
-  document.getElementById('btn-back-dashboard').addEventListener('click', () => {
-    saveCurrentDraft();
-    renderDashboard();
+  document.getElementById('btn-back-dashboard').addEventListener('click', async () => {
+    await renderDashboard();
     showPage('dashboard');
   });
-  document.getElementById('btn-back-editor').addEventListener('click', () => {
-    showPage('editor');
-  });
+  document.getElementById('btn-back-editor').addEventListener('click', () => showPage('editor'));
 
   /* Save draft */
-  document.getElementById('btn-save-draft').addEventListener('click', () => {
-    saveCurrentDraft();
+  document.getElementById('btn-save-draft').addEventListener('click', async () => {
+    await saveCurrentDraft();
     showToast('Utkast lagret', 'success');
     renderDashboard();
   });
 
   /* Proceed to send */
-  document.getElementById('btn-proceed-send').addEventListener('click', () => {
-    saveCurrentDraft();
-    openSend(state.currentId);
-  });
+  document.getElementById('btn-proceed-send').addEventListener('click', () => openSend(null));
 
-  /* Toolbar buttons */
+  /* Toolbar */
   document.querySelectorAll('.tool-btn[data-cmd]').forEach(btn => {
-    btn.addEventListener('mousedown', e => {
-      e.preventDefault();
-      document.execCommand(btn.dataset.cmd, false, null);
-    });
+    btn.addEventListener('mousedown', e => { e.preventDefault(); document.execCommand(btn.dataset.cmd, false, null); });
   });
-
-  /* Heading select */
   document.getElementById('heading-select').addEventListener('change', function () {
-    if (this.value) {
-      document.execCommand('formatBlock', false, this.value);
-    } else {
-      document.execCommand('formatBlock', false, 'p');
-    }
+    document.execCommand('formatBlock', false, this.value || 'p');
     this.value = '';
     document.getElementById('editor-content').focus();
   });
@@ -452,13 +398,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (document.getElementById('editor-content').textContent.trim().length > 10) {
         if (!confirm('Dette vil erstatte det eksisterende innholdet. Vil du fortsette?')) return;
       }
-      document.getElementById('contract-title').value  = tpl.title;
-      document.getElementById('editor-content').innerHTML = tpl.html;
+      document.getElementById('contract-title').value         = tpl.title;
+      document.getElementById('editor-content').innerHTML     = tpl.html;
       showToast('Mal lastet inn');
     });
   });
 
-  /* Filter buttons */
+  /* Filter */
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -469,50 +415,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* Send form */
-  document.getElementById('send-form').addEventListener('submit', e => {
+  document.getElementById('send-form').addEventListener('submit', async e => {
     e.preventDefault();
-
     const name  = document.getElementById('recipient-name').value.trim();
     const email = document.getElementById('recipient-email').value.trim();
     let valid   = true;
-
     document.getElementById('err-name').textContent  = '';
     document.getElementById('err-email').textContent = '';
-
-    if (!name) {
-      document.getElementById('err-name').textContent = 'Vennligst skriv inn kundens navn.';
-      valid = false;
-    }
+    if (!name)  { document.getElementById('err-name').textContent  = 'Vennligst skriv inn kundens navn.'; valid = false; }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('err-email').textContent = 'Vennligst skriv inn en gyldig e-postadresse.';
-      valid = false;
+      document.getElementById('err-email').textContent = 'Vennligst skriv inn en gyldig e-postadresse.'; valid = false;
     }
     if (!valid) return;
 
-    const contract = state.contracts.find(c => c.id === state.currentId);
-    if (!contract) return;
-
-    contract.recipient = { name, email };
-    contract.status    = 'sent';
-    contract.sentAt    = Date.now();
-    saveContracts();
-    renderDashboard();
-
-    showLinkResult(state.currentId);
-    showToast('Signeringslenke generert!', 'success');
+    try {
+      await api.update(state.currentId, {
+        status: 'sent', recipientName: name, recipientEmail: email,
+      });
+      await renderDashboard();
+      showLinkResult(state.currentId);
+      showToast('Signeringslenke generert!', 'success');
+    } catch {
+      showToast('Kunne ikke oppdatere kontrakten', 'danger');
+    }
   });
 
-  /* Copy link button */
+  /* Copy link */
   document.getElementById('btn-copy-link').addEventListener('click', function () {
-    const link = document.getElementById('signing-link-text').textContent;
-    copyToClipboard(link);
+    copyToClipboard(document.getElementById('signing-link-text').textContent);
     this.textContent = 'Kopiert!';
     this.classList.add('copied');
     setTimeout(() => {
       this.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M5 3V2a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1h-1" stroke="currentColor" stroke-width="1.4"/></svg> Kopier`;
       this.classList.remove('copied');
     }, 2000);
-    showToast('Lenke kopiert til utklippstavlen!', 'success');
+    showToast('Lenke kopiert!', 'success');
   });
 
   /* Delete modal */
@@ -520,18 +457,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modal-overlay').style.display = 'none';
     state.deleteTargetId = null;
   });
-
-  document.getElementById('btn-confirm-delete').addEventListener('click', () => {
+  document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
     if (!state.deleteTargetId) return;
-    state.contracts = state.contracts.filter(c => c.id !== state.deleteTargetId);
-    saveContracts();
-    renderDashboard();
+    try {
+      await api.remove(state.deleteTargetId);
+      await renderDashboard();
+      showToast('Kontrakt slettet', 'danger');
+    } catch {
+      showToast('Kunne ikke slette kontrakt', 'danger');
+    }
     document.getElementById('modal-overlay').style.display = 'none';
     state.deleteTargetId = null;
-    showToast('Kontrakt slettet', 'danger');
   });
-
-  /* Close modal on overlay click */
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) {
       e.currentTarget.style.display = 'none';
@@ -539,13 +476,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* Auto-save on title change */
-  document.getElementById('contract-title').addEventListener('input', debounce(() => {
-    saveCurrentDraft();
-  }, 800));
+  /* Auto-save title */
+  document.getElementById('contract-title').addEventListener('input', debounce(async () => {
+    if (state.currentId !== null) await saveCurrentDraft();
+  }, 1000));
 });
-
-function debounce(fn, ms) {
-  let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-}
