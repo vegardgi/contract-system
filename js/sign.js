@@ -108,7 +108,7 @@ function initCanvas() {
     lastX = p.x; lastY = p.y;
     ctx.beginPath();
     ctx.arc(p.x, p.y, penSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = '#1e1b4b';
+    ctx.fillStyle = '#2C1A0E';
     ctx.fill();
   }
 
@@ -116,7 +116,7 @@ function initCanvas() {
     if (!drawing) return;
     e.preventDefault();
     const p = getPos(e);
-    ctx.strokeStyle = '#1e1b4b';
+    ctx.strokeStyle = '#2C1A0E';
     ctx.lineWidth   = penSize;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
@@ -248,7 +248,7 @@ function renderTypedSignature(name, fontFamily) {
     const ctx = canvas.getContext('2d');
     document.fonts.ready.then(() => {
       ctx.font = `60px '${fontFamily}', cursive`;
-      ctx.fillStyle   = '#1e1b4b';
+      ctx.fillStyle   = '#2C1A0E';
       ctx.textBaseline = 'middle';
       const metrics = ctx.measureText(name);
       if (metrics.width > 420) {
@@ -282,7 +282,7 @@ function downloadContractPdf(c, sigDataUrl) {
 <html lang="no">
 <head>
   <meta charset="UTF-8">
-  <title>${escapeHtml(c.title || 'Kontrakt')} – ContractFlow</title>
+  <title>${escapeHtml(c.title || 'Kontrakt')} – Pizzapappa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -309,7 +309,7 @@ function downloadContractPdf(c, sigDataUrl) {
       align-items: center;
       justify-content: space-between;
       padding-bottom: 20px;
-      border-bottom: 2px solid #6366F1;
+      border-bottom: 2px solid #C8562A;
       margin-bottom: 36px;
     }
     .brand {
@@ -319,14 +319,14 @@ function downloadContractPdf(c, sigDataUrl) {
     }
     .brand-mark {
       width: 32px; height: 32px;
-      background: #EEF2FF;
+      background: #FDF0EA;
       border-radius: 7px;
       display: flex; align-items: center; justify-content: center;
     }
     .brand-name {
       font-size: 1rem;
       font-weight: 700;
-      color: #111827;
+      color: #2C1A0E;
       letter-spacing: -0.02em;
     }
     .doc-status {
@@ -365,7 +365,7 @@ function downloadContractPdf(c, sigDataUrl) {
 
     /* ── Signature block ── */
     .sig-block {
-      border-top: 2px dashed #C7D2FE;
+      border-top: 2px dashed #F0C4A8;
       padding-top: 28px;
       margin-top: 8px;
     }
@@ -377,7 +377,7 @@ function downloadContractPdf(c, sigDataUrl) {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #6366F1;
+      color: #C8562A;
       margin-bottom: 20px;
     }
     .sig-meta-grid {
@@ -396,8 +396,8 @@ function downloadContractPdf(c, sigDataUrl) {
     }
     .sig-meta-value { font-size: 0.9rem; font-weight: 600; color: #111827; }
     .sig-img-wrap {
-      background: #FAFBFF;
-      border: 1.5px solid #E0E7FF;
+      background: #FDFAF6;
+      border: 1.5px solid #F0DDD0;
       border-radius: 10px;
       padding: 16px 24px;
       display: inline-block;
@@ -431,12 +431,12 @@ function downloadContractPdf(c, sigDataUrl) {
     <div class="brand">
       <div class="brand-mark">
         <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-          <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#6366F1" opacity="0.2"/>
-          <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="#6366F1"/>
-          <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#6366F1" stroke-width="1.5" fill="none"/>
+          <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#C8562A" opacity="0.2"/>
+          <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="#C8562A"/>
+          <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#C8562A" stroke-width="1.5" fill="none"/>
         </svg>
       </div>
-      <span class="brand-name">ContractFlow</span>
+      <span class="brand-name">Pizzapappa – kontraktsignering</span>
     </div>
     <span class="doc-status">✓ Signert</span>
   </div>
@@ -447,7 +447,7 @@ function downloadContractPdf(c, sigDataUrl) {
 
   <div class="sig-block">
     <div class="sig-block-label">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z" stroke="#6366F1" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z" stroke="#C8562A" stroke-width="1.5" stroke-linejoin="round"/></svg>
       Signatur
     </div>
     <div class="sig-meta-grid">
