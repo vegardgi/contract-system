@@ -647,7 +647,7 @@ async function downloadAdminPdf(c, btn) {
 
           <!-- Sender -->
           <div style="padding:18px 22px;background:#FDFAF6">
-            <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#B89080;margin-bottom:10px">Avsender</div>
+            <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#B89080;margin-bottom:10px">Pizzapappa v/Vegard Giskehaug</div>
             <div style="margin-bottom:4px">
               <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Signert av</div>
               <div style="font-size:0.85rem;font-weight:600;margin-top:2px">Vegard Giskehaug</div>
