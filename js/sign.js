@@ -60,7 +60,8 @@ function showSignedView(c) {
     document.getElementById('view-sig-block').style.display = 'block';
   }
 
-  document.getElementById('btn-pdf-view').onclick = () => downloadContractPdf(c, c.signature?.data);
+  const pdfBtn = document.getElementById('btn-pdf-view');
+  pdfBtn.onclick = function () { downloadContractPdf(c, c.signature?.data, this); };
 
   showState('already-signed');
 }
@@ -261,227 +262,157 @@ function renderTypedSignature(name, fontFamily) {
 }
 
 /* ─── PDF download ───────────────────────────────────────────── */
-document.getElementById('btn-pdf-success').addEventListener('click', () => {
-  if (lastSigned) downloadContractPdf(lastSigned, lastSigDataUrl);
+document.getElementById('btn-pdf-success').addEventListener('click', function () {
+  if (lastSigned) downloadContractPdf(lastSigned, lastSigDataUrl, this);
 });
 
-function downloadContractPdf(c, sigDataUrl) {
-  const recipientName = c.recipient?.name || '—';
-  const signedDate = c.signedAt
-    ? new Date(c.signedAt).toLocaleDateString('no-NO', {
-        day: 'numeric', month: 'long', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      })
-    : '—';
+async function downloadContractPdf(c, sigDataUrl, btn) {
+  // Show loading state
+  const origHTML = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 0.8s linear infinite"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="14 8"/></svg> Genererer…`;
+  }
 
-  const sigImgTag = sigDataUrl
-    ? `<img src="${sigDataUrl}" class="sig-img" alt="Signatur">`
-    : '<span class="no-sig">Ingen signaturbilde</span>';
+  try {
+    const recipientName = c.recipient?.name || '—';
+    const signedDate = c.signedAt
+      ? new Date(c.signedAt).toLocaleDateString('no-NO', {
+          day: 'numeric', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        })
+      : '—';
 
-  const html = `<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8">
-  <title>${escapeHtml(c.title || 'Kontrakt')} – Pizzapappa</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 15px; -webkit-font-smoothing: antialiased; }
-    body {
-      font-family: 'Inter', Arial, sans-serif;
-      color: #111827;
-      background: #fff;
-      padding: 0;
-      line-height: 1.65;
-    }
+    // Build a hidden render container styled for A4
+    const wrap = document.createElement('div');
+    wrap.style.cssText = [
+      'position:fixed', 'left:-9999px', 'top:0',
+      'width:794px', 'background:#fff',
+      'font-family:Arial,Helvetica,sans-serif',
+      'font-size:13px', 'line-height:1.65',
+      'color:#2C1A0E', 'padding:52px 64px 64px',
+    ].join(';');
 
-    /* ── Page shell ── */
-    .page-wrap {
-      max-width: 740px;
-      margin: 0 auto;
-      padding: 48px 56px 56px;
-    }
-
-    /* ── Header ── */
-    .doc-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #C8562A;
-      margin-bottom: 36px;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .brand-mark {
-      width: 32px; height: 32px;
-      background: #FDF0EA;
-      border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .brand-name {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #2C1A0E;
-      letter-spacing: -0.02em;
-    }
-    .doc-status {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #059669;
-      background: #ECFDF5;
-      border: 1px solid rgba(5,150,105,0.2);
-      padding: 5px 12px;
-      border-radius: 100px;
-    }
-
-    /* ── Title ── */
-    .contract-title {
-      font-size: 1.75rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: #111827;
-      margin-bottom: 28px;
-      line-height: 1.25;
-    }
-
-    /* ── Content ── */
-    .contract-content { margin-bottom: 40px; }
-    .contract-content h1 { font-size: 1.3rem; font-weight: 700; margin: 24px 0 10px; }
-    .contract-content h2 { font-size: 1.15rem; font-weight: 700; margin: 20px 0 8px; }
-    .contract-content h3 { font-size: 1rem; font-weight: 600; margin: 16px 0 6px; }
-    .contract-content p  { margin-bottom: 10px; color: #374151; }
-    .contract-content ul, .contract-content ol {
-      padding-left: 20px; margin-bottom: 10px; color: #374151;
-    }
-    .contract-content li { margin-bottom: 4px; }
-    .contract-content strong { font-weight: 600; color: #111827; }
-
-    /* ── Signature block ── */
-    .sig-block {
-      border-top: 2px dashed #F0C4A8;
-      padding-top: 28px;
-      margin-top: 8px;
-    }
-    .sig-block-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #C8562A;
-      margin-bottom: 20px;
-    }
-    .sig-meta-grid {
-      display: flex;
-      gap: 40px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .sig-meta-item { display: flex; flex-direction: column; gap: 3px; }
-    .sig-meta-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #9CA3AF;
-    }
-    .sig-meta-value { font-size: 0.9rem; font-weight: 600; color: #111827; }
-    .sig-img-wrap {
-      background: #FDFAF6;
-      border: 1.5px solid #F0DDD0;
-      border-radius: 10px;
-      padding: 16px 24px;
-      display: inline-block;
-    }
-    .sig-img { max-height: 80px; max-width: 300px; display: block; }
-    .no-sig { font-size: 0.85rem; color: #9CA3AF; }
-
-    /* ── Footer ── */
-    .doc-footer {
-      margin-top: 40px;
-      padding-top: 16px;
-      border-top: 1px solid #E5E7EB;
-      font-size: 0.72rem;
-      color: #9CA3AF;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    /* ── Print ── */
-    @media print {
-      body { padding: 0; }
-      .page-wrap { padding: 20px 32px 32px; max-width: 100%; }
-      @page { margin: 15mm 15mm 15mm 15mm; size: A4; }
-    }
-  </style>
-</head>
-<body>
-<div class="page-wrap">
-
-  <div class="doc-header">
-    <div class="brand">
-      <div class="brand-mark">
-        <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-          <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#C8562A" opacity="0.2"/>
-          <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="#C8562A"/>
-          <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#C8562A" stroke-width="1.5" fill="none"/>
-        </svg>
+    wrap.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding-bottom:18px;border-bottom:2.5px solid #C8562A;margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:30px;height:30px;background:#FDF0EA;border-radius:6px;
+                      display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+              <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"
+                    fill="#C8562A" opacity="0.25"/>
+              <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="#C8562A"/>
+              <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"
+                    stroke="#C8562A" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+          <span style="font-size:0.9rem;font-weight:700;letter-spacing:-0.01em">
+            Pizzapappa – kontraktsignering
+          </span>
+        </div>
+        <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;
+                     letter-spacing:0.1em;color:#5A8330;background:#EDF4E3;
+                     border:1px solid rgba(90,131,48,0.2);padding:4px 11px;border-radius:100px">
+          ✓ Signert
+        </span>
       </div>
-      <span class="brand-name">Pizzapappa – kontraktsignering</span>
-    </div>
-    <span class="doc-status">✓ Signert</span>
-  </div>
 
-  <h1 class="contract-title">${escapeHtml(c.title || 'Uten tittel')}</h1>
+      <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;
+                 margin-bottom:24px;line-height:1.2">
+        ${escapeHtml(c.title || 'Uten tittel')}
+      </h1>
 
-  <div class="contract-content">${c.content || ''}</div>
-
-  <div class="sig-block">
-    <div class="sig-block-label">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z" stroke="#C8562A" stroke-width="1.5" stroke-linejoin="round"/></svg>
-      Signatur
-    </div>
-    <div class="sig-meta-grid">
-      <div class="sig-meta-item">
-        <span class="sig-meta-label">Signert av</span>
-        <span class="sig-meta-value">${escapeHtml(recipientName)}</span>
+      <div style="margin-bottom:36px;font-size:13px;line-height:1.7;color:#2C1A0E">
+        ${c.content || ''}
       </div>
-      <div class="sig-meta-item">
-        <span class="sig-meta-label">Dato</span>
-        <span class="sig-meta-value">${escapeHtml(signedDate)}</span>
+
+      <div style="border-top:2px dashed #F0C4A8;padding-top:26px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:0.62rem;
+                    font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+                    color:#C8562A;margin-bottom:18px">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M2 12l1.5-4.5L12 1l3 3-8.5 7.5L2 12z"
+                  stroke="#C8562A" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          Signatur
+        </div>
+        <div style="display:flex;gap:36px;margin-bottom:18px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;
+                        letter-spacing:0.08em;color:#B89080;margin-bottom:3px">Signert av</div>
+            <div style="font-size:0.88rem;font-weight:600">${escapeHtml(recipientName)}</div>
+          </div>
+          <div>
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;
+                        letter-spacing:0.08em;color:#B89080;margin-bottom:3px">Dato</div>
+            <div style="font-size:0.88rem;font-weight:600">${escapeHtml(signedDate)}</div>
+          </div>
+        </div>
+        ${sigDataUrl
+          ? `<div style="background:#FDFAF6;border:1.5px solid #F0DDD0;border-radius:8px;
+                         padding:14px 20px;display:inline-block">
+               <img src="${sigDataUrl}" style="max-height:72px;max-width:280px;display:block">
+             </div>`
+          : ''}
       </div>
-    </div>
-    <div class="sig-img-wrap">${sigImgTag}</div>
-  </div>
 
-  <div class="doc-footer">
-    <span>Generert av ContractFlow</span>
-    <span>Signert: ${escapeHtml(signedDate)}</span>
-  </div>
+      <div style="margin-top:36px;padding-top:14px;border-top:1px solid #E8DDD4;
+                  font-size:0.65rem;color:#B89080;display:flex;justify-content:space-between">
+        <span>Pizzapappa – kontraktsignering</span>
+        <span>Signert: ${escapeHtml(signedDate)}</span>
+      </div>
+    `;
 
-</div>
-<script>
-  window.addEventListener('load', () => {
-    // Wait for fonts/images, then print
-    setTimeout(() => { window.print(); }, 600);
-  });
-<\/script>
-</body>
-</html>`;
+    document.body.appendChild(wrap);
 
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (!win) { alert('Tillat popup-vinduer for å laste ned PDF.'); return; }
-  win.document.write(html);
-  win.document.close();
+    const canvas = await html2canvas(wrap, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      imageTimeout: 0,
+    });
+
+    document.body.removeChild(wrap);
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW  = pageW;
+    const imgH  = (canvas.height * imgW) / canvas.width;
+
+    // Add image across multiple pages if needed
+    let remaining = imgH;
+    let srcY = 0;
+    let page = 0;
+
+    while (remaining > 0) {
+      if (page > 0) pdf.addPage();
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.95), 'JPEG',
+        0, -srcY, imgW, imgH, '', 'FAST'
+      );
+      srcY      += pageH;
+      remaining -= pageH;
+      page++;
+    }
+
+    const safeName = (c.title || 'kontrakt')
+      .replace(/[^\w\sæøåÆØÅ-]/g, '').trim() || 'kontrakt';
+    pdf.save(`${safeName}.pdf`);
+
+  } catch (err) {
+    console.error(err);
+    alert('Kunne ikke generere PDF. Prøv igjen.');
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = origHTML;
+  }
 }
 
 function escapeHtml(str) {
