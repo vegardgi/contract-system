@@ -67,12 +67,12 @@ function showSignedView(c) {
     document.getElementById('view-sig-block').style.display = 'block';
   }
 
-  // Sender date (sentAt)
+  // Sender date (sentAt = when the link was generated)
   const senderDateStr = c.sentAt
     ? new Date(c.sentAt).toLocaleDateString('no-NO', {
         day: 'numeric', month: 'long', year: 'numeric'
       })
-    : dateStr;
+    : '—';
   document.getElementById('view-sender-date').textContent = senderDateStr;
 
   const pdfBtn = document.getElementById('btn-pdf-view');
@@ -329,7 +329,7 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
 
     const senderDate = c.sentAt
       ? new Date(c.sentAt).toLocaleDateString('no-NO', { day: 'numeric', month: 'long', year: 'numeric' })
-      : signedDate;
+      : '—';
 
     wrap.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;

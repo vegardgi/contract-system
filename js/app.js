@@ -654,7 +654,7 @@ async function downloadAdminPdf(c, btn) {
             </div>
             <div style="margin-bottom:14px">
               <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Dato</div>
-              <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${c.sentAt ? new Date(c.sentAt).toLocaleDateString('no-NO',{day:'numeric',month:'long',year:'numeric'}) : signedDate}</div>
+              <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${c.sentAt ? new Date(c.sentAt).toLocaleDateString('no-NO',{day:'numeric',month:'long',year:'numeric'}) : '—'}</div>
             </div>
             <div style="font-family:'Kalam',cursive;font-weight:700;font-size:1.9rem;color:#2C1A0E;line-height:1.25;padding:4px 0">
               Vegard Giskehaug
