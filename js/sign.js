@@ -292,14 +292,14 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
       : '—';
 
     // Build a hidden render container styled for A4
-    // Ensure Dancing Script is loaded for PDF render
+    // Ensure Kalam is loaded for PDF render
     if (!document.querySelector('link[data-pdf-font]')) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.dataset.pdfFont = '1';
-      link.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap';
+      link.href = 'https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap';
       document.head.appendChild(link);
-      await new Promise(r => setTimeout(r, 800)); // wait for font
+      await new Promise(r => setTimeout(r, 900));
     }
 
     const wrap = document.createElement('div');
@@ -391,7 +391,7 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
               <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Dato</div>
               <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${escapeHtml(senderDate)}</div>
             </div>
-            <div style="font-family:'Dancing Script',cursive;font-size:2rem;color:#2C1A0E;line-height:1.2;padding:4px 0">
+            <div style="font-family:'Kalam',cursive;font-weight:700;font-size:1.9rem;color:#2C1A0E;line-height:1.25;padding:4px 0">
               Vegard Giskehaug
             </div>
           </div>
@@ -408,9 +408,19 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
 
     document.body.appendChild(wrap);
 
+    // Wait for all images inside the render container to fully load
+    await Promise.all(
+      Array.from(wrap.querySelectorAll('img')).map(img =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise(r => { img.onload = r; img.onerror = r; })
+      )
+    );
+
     const canvas = await html2canvas(wrap, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
       imageTimeout: 0,
