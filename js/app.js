@@ -290,7 +290,6 @@ async function openEditor(id) {
   const sigBlock = document.getElementById('signature-block');
   if (contract.status === 'signed' && contract.signature?.data) {
     document.getElementById('sig-signer-name').textContent  = contract.recipient?.name  || '—';
-    document.getElementById('sig-signer-email').textContent = contract.recipient?.email || '—';
     document.getElementById('sig-signed-date').textContent  = new Date(contract.signedAt).toLocaleDateString('no-NO', {
       day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
@@ -331,18 +330,14 @@ async function openSend(id) {
   state.currentId = id ?? state.currentId;
 
   document.getElementById('recipient-name').value  = '';
-  document.getElementById('recipient-email').value = '';
-  document.getElementById('send-message').value    = '';
   document.getElementById('link-result').style.display = 'none';
   document.getElementById('err-name').textContent  = '';
-  document.getElementById('err-email').textContent = '';
   document.getElementById('btn-generate-link').textContent = 'Generer signeringslenke';
 
   // Pre-fill if already sent
   const contract = state.contracts.find(c => c.id === state.currentId);
   if (contract?.recipient) {
-    document.getElementById('recipient-name').value  = contract.recipient.name  || '';
-    document.getElementById('recipient-email').value = contract.recipient.email || '';
+    document.getElementById('recipient-name').value = contract.recipient.name || '';
     if (contract.status === 'sent') showLinkResult(state.currentId);
   }
 
@@ -355,8 +350,53 @@ function showLinkResult(id) {
   document.getElementById('btn-generate-link').textContent = 'Regenerer lenke';
 }
 
+/* ─── Password gate ──────────────────────────────────────────── */
+const CF_PASSWORD = 'bEkre9-wocmon-bewhep';
+const CF_SESSION_KEY = 'cf_auth';
+
+function initPasswordGate() {
+  if (sessionStorage.getItem(CF_SESSION_KEY) === '1') {
+    // Already authenticated this session
+    document.getElementById('pw-gate').style.display = 'none';
+    return true;
+  }
+  // Show gate, hide content
+  document.getElementById('pw-gate').style.display = 'flex';
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.main').style.display   = 'none';
+  document.getElementById('toast').style.display  = 'none';
+
+  const input  = document.getElementById('pw-input');
+  const errEl  = document.getElementById('pw-error');
+  const submit = document.getElementById('pw-submit');
+
+  function tryLogin() {
+    if (input.value === CF_PASSWORD) {
+      sessionStorage.setItem(CF_SESSION_KEY, '1');
+      document.getElementById('pw-gate').style.display  = 'none';
+      document.querySelector('.header').style.display   = '';
+      document.querySelector('.main').style.display     = '';
+      document.getElementById('toast').style.display    = '';
+      renderDashboard();
+    } else {
+      errEl.textContent = 'Feil passord. Prøv igjen.';
+      input.value = '';
+      input.focus();
+      input.classList.add('pw-input--shake');
+      setTimeout(() => input.classList.remove('pw-input--shake'), 500);
+    }
+  }
+
+  submit.addEventListener('click', tryLogin);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+  setTimeout(() => input.focus(), 50);
+  return false;
+}
+
 /* ─── Init ───────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
+  const authenticated = initPasswordGate();
+  if (!authenticated) return;
   await renderDashboard();
 
   /* New contract */
@@ -417,20 +457,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* Send form */
   document.getElementById('send-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const name  = document.getElementById('recipient-name').value.trim();
-    const email = document.getElementById('recipient-email').value.trim();
-    let valid   = true;
-    document.getElementById('err-name').textContent  = '';
-    document.getElementById('err-email').textContent = '';
-    if (!name)  { document.getElementById('err-name').textContent  = 'Vennligst skriv inn kundens navn.'; valid = false; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('err-email').textContent = 'Vennligst skriv inn en gyldig e-postadresse.'; valid = false;
-    }
-    if (!valid) return;
+    const name = document.getElementById('recipient-name').value.trim();
+    document.getElementById('err-name').textContent = '';
+    if (!name) { document.getElementById('err-name').textContent = 'Vennligst skriv inn kundens navn.'; return; }
 
     try {
       await api.update(state.currentId, {
-        status: 'sent', recipientName: name, recipientEmail: email,
+        status: 'sent', recipientName: name,
       });
       await renderDashboard();
       showLinkResult(state.currentId);

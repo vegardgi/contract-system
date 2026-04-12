@@ -20,7 +20,7 @@ async function init() {
     return;
   }
 
-  if (contract.status === 'signed')  { showState('already-signed'); return; }
+  if (contract.status === 'signed')  { showSignedView(contract); return; }
   if (contract.status !== 'sent')    { showState('not-found');      return; }
 
   document.getElementById('sign-contract-title').textContent = contract.title || 'Uten tittel';
@@ -36,6 +36,29 @@ async function init() {
 function showState(name) {
   document.querySelectorAll('.state-view').forEach(el => el.style.display = 'none');
   document.getElementById(`state-${name}`).style.display = 'block';
+}
+
+function showSignedView(c) {
+  document.getElementById('view-contract-title').textContent  = c.title || 'Uten tittel';
+  document.getElementById('view-recipient-name').textContent  = c.recipient?.name || '—';
+  document.getElementById('view-contract-content').innerHTML  = c.content || '';
+
+  const dateStr = c.signedAt
+    ? new Date(c.signedAt).toLocaleDateString('no-NO', {
+        day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })
+    : '—';
+  document.getElementById('view-signed-date').textContent = dateStr;
+
+  if (c.signature?.data) {
+    document.getElementById('view-sig-name').textContent  = c.recipient?.name || '—';
+    document.getElementById('view-sig-date').textContent  = dateStr;
+    document.getElementById('view-sig-image').src         = c.signature.data;
+    document.getElementById('view-sig-block').style.display = 'block';
+  }
+
+  showState('already-signed');
 }
 
 /* ─── Tabs ───────────────────────────────────────────────────── */

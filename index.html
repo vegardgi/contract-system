@@ -11,6 +11,36 @@
 </head>
 <body>
 
+  <!-- ─── Password Gate ─────────────────────────────────────────────── -->
+  <div id="pw-gate" style="display:none">
+    <div class="pw-backdrop"></div>
+    <div class="pw-card">
+      <div class="pw-logo">
+        <div class="logo-mark">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" fill="var(--primary)" opacity="0.15"/>
+            <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="var(--primary)"/>
+            <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="var(--primary)" stroke-width="1.5" fill="none"/>
+            <line x1="7" y1="9" x2="15" y2="9" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="12" x2="15" y2="12" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="15" x2="12" y2="15" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">ContractFlow</span>
+      </div>
+      <h2 class="pw-title">Logg inn</h2>
+      <p class="pw-desc">Skriv inn passordet for å fortsette</p>
+      <div class="pw-field-wrap">
+        <input type="password" id="pw-input" class="pw-input" placeholder="Passord" autocomplete="current-password">
+        <p class="pw-error" id="pw-error"></p>
+      </div>
+      <button class="btn btn-primary btn--full" id="pw-submit">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Logg inn
+      </button>
+    </div>
+  </div>
+
   <!-- ─── Header ─────────────────────────────────────────────────────── -->
   <header class="header">
     <div class="header-inner">
@@ -158,10 +188,6 @@
                     <span class="sig-meta-value" id="sig-signer-name">—</span>
                   </div>
                   <div class="sig-meta-item">
-                    <span class="sig-meta-label">E-post</span>
-                    <span class="sig-meta-value" id="sig-signer-email">—</span>
-                  </div>
-                  <div class="sig-meta-item">
                     <span class="sig-meta-label">Dato</span>
                     <span class="sig-meta-value" id="sig-signed-date">—</span>
                   </div>
@@ -228,15 +254,6 @@
               <label for="recipient-name">Kundens fulle navn</label>
               <input type="text" id="recipient-name" placeholder="Ola Nordmann" autocomplete="name">
               <span class="field-error" id="err-name"></span>
-            </div>
-            <div class="form-group">
-              <label for="recipient-email">E-postadresse</label>
-              <input type="email" id="recipient-email" placeholder="ola@eksempel.no" autocomplete="email">
-              <span class="field-error" id="err-email"></span>
-            </div>
-            <div class="form-group">
-              <label for="send-message">Personlig melding <span class="optional">(valgfritt)</span></label>
-              <textarea id="send-message" rows="3" placeholder="Hei! Her er kontrakten vi diskuterte. Vennligst gå gjennom og signer."></textarea>
             </div>
 
             <div class="link-result" id="link-result" style="display:none">

@@ -1076,6 +1076,99 @@ a { color: var(--primary); }
   display: block;
 }
 
+/* ─── Password gate ──────────────────────────────────────────── */
+#pw-gate {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.pw-backdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #EEF2FF 0%, #F5F6FF 60%, #E0E7FF 100%);
+}
+.pw-card {
+  position: relative;
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 44px 40px 40px;
+  width: min(440px, calc(100vw - 40px));
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--border);
+  animation: scaleIn 0.3s var(--ease-spring) both;
+  text-align: center;
+}
+.pw-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.pw-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+.pw-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+.pw-field-wrap { margin-bottom: 20px; text-align: left; }
+.pw-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  transition: all 0.15s;
+  outline: none;
+  letter-spacing: 0.04em;
+  display: block;
+}
+.pw-input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px var(--primary-ring); }
+.pw-error {
+  font-size: 0.8rem;
+  color: var(--danger);
+  margin-top: 7px;
+  min-height: 18px;
+  font-weight: 500;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-6px); }
+  40%,80%  { transform: translateX(6px); }
+}
+.pw-input--shake { animation: shake 0.4s ease both; }
+
+/* ─── Signed view panel ──────────────────────────────────────── */
+.sign-card--signed { border-color: rgba(5,150,105,0.25) !important; }
+.signed-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 8px 0 4px;
+}
+.signed-banner h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--success);
+  letter-spacing: -0.02em;
+}
+.signed-banner p { font-size: 0.88rem; color: var(--text-muted); }
+.signed-banner strong { color: var(--text); }
+.sign-layout--signed .contract-view-panel { position: static; }
+
 /* ─── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
