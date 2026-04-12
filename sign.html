@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signer kontrakt – ContractFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Dancing+Script:wght@400;600;700&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ─── Header ─────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" fill="var(--primary)" opacity="0.15"/>
+            <path d="M14 2l4 4h-3a1 1 0 01-1-1V2z" fill="var(--primary)"/>
+            <path d="M4 2h10l4 4v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="var(--primary)" stroke-width="1.5" fill="none"/>
+            <line x1="7" y1="9" x2="15" y2="9" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="12" x2="15" y2="12" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="15" x2="12" y2="15" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">ContractFlow</span>
+      </div>
+      <div class="security-badge-wrap">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L2 3v4c0 3 2.5 5.5 5 6 2.5-.5 5-3 5-6V3L7 1z" stroke="var(--success)" stroke-width="1.4" fill="var(--success-light)"/></svg>
+        <span>Sikker signering</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Main ──────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Not found -->
+    <div id="state-not-found" class="state-view" style="display:none">
+      <div class="container container--narrow">
+        <div class="empty-state">
+          <div class="empty-art">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+              <rect width="80" height="80" rx="40" fill="#FEF2F2"/>
+              <circle cx="40" cy="40" r="18" stroke="#DC2626" stroke-width="2" fill="none"/>
+              <path d="M33 33l14 14M47 33l-14 14" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>Kontrakten ble ikke funnet</h3>
+          <p>Lenken kan være ugyldig eller kontrakten er slettet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Already signed -->
+    <div id="state-already-signed" class="state-view" style="display:none">
+      <div class="container container--narrow">
+        <div class="success-card">
+          <div class="success-checkmark">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="var(--success)"/><path d="M12 20l6 6 10-12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h2>Allerede signert</h2>
+          <p>Denne kontrakten er allerede signert og trenger ikke signeres på nytt.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signing flow -->
+    <div id="state-signing" class="state-view" style="display:none">
+      <div class="container">
+        <div class="sign-layout">
+
+          <!-- Contract preview -->
+          <div class="contract-view-panel">
+            <div class="contract-view-header">
+              <div class="contract-view-meta">
+                <span class="badge badge--sent">Til signering</span>
+                <span class="contract-view-to">Til: <strong id="sign-recipient-name">—</strong></span>
+              </div>
+              <h2 class="contract-view-title" id="sign-contract-title">—</h2>
+            </div>
+            <div class="contract-view-body" id="sign-contract-content"></div>
+          </div>
+
+          <!-- Signature panel -->
+          <div class="sign-panel">
+            <div class="sign-card">
+              <h3>Din signatur</h3>
+              <p class="sign-desc">Velg signeringsmetode og bekreft at du godtar kontrakten</p>
+
+              <div class="sign-tabs">
+                <button class="sign-tab active" data-tab="draw">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14l1-4L12 2l3 3-9 9-4 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 4l2 2" stroke="currentColor" stroke-width="1.5"/></svg>
+                  Tegn signatur
+                </button>
+                <button class="sign-tab" data-tab="type">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M8 4v8M5 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Skriv navn
+                </button>
+              </div>
+
+              <!-- Draw tab -->
+              <div class="sign-tab-pane active" id="pane-draw">
+                <div class="canvas-wrap">
+                  <canvas id="sig-canvas" width="460" height="180"></canvas>
+                  <span class="canvas-placeholder" id="canvas-placeholder">Tegn signaturen din her</span>
+                </div>
+                <div class="canvas-controls">
+                  <button class="btn-clear" id="btn-clear-canvas">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    Slett
+                  </button>
+                  <div class="pen-size-row">
+                    <span>Penselstørrelse:</span>
+                    <button class="pen-size-btn active" data-size="2">S</button>
+                    <button class="pen-size-btn" data-size="3.5">M</button>
+                    <button class="pen-size-btn" data-size="5.5">L</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Type tab -->
+              <div class="sign-tab-pane" id="pane-type">
+                <div class="form-group">
+                  <label>Skriv inn ditt fulle navn</label>
+                  <input type="text" id="typed-name" class="name-input" placeholder="Ola Nordmann" autocomplete="name">
+                </div>
+                <div class="typed-preview-area" id="typed-preview-area" style="display:none">
+                  <p class="preview-label">Forhåndsvisning:</p>
+                  <div class="typed-sig-display" id="typed-sig-display"></div>
+                  <div class="font-options">
+                    <span class="font-options-label">Velg stil:</span>
+                    <button class="font-opt active" data-font="Dancing Script">
+                      <span style="font-family:'Dancing Script'; font-size:1.1rem">Stil 1</span>
+                    </button>
+                    <button class="font-opt" data-font="Caveat">
+                      <span style="font-family:'Caveat'; font-size:1.1rem">Stil 2</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Agreement -->
+              <label class="agreement-label">
+                <input type="checkbox" id="agree-check" class="agree-checkbox">
+                <span class="agree-checkmark"></span>
+                <span class="agree-text">Jeg bekrefter at jeg har lest og godtar kontrakten, og at min digitale signatur er juridisk bindende.</span>
+              </label>
+
+              <button class="btn btn-primary btn--full btn--sign" id="btn-sign" disabled>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 16l2-6L14 1l3 3L7 14 2 16z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 3l3 3" stroke="currentColor" stroke-width="1.8"/></svg>
+                Signer kontrakt
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div id="state-success" class="state-view" style="display:none">
+      <div class="container container--narrow">
+        <div class="success-card success-card--big">
+          <div class="success-anim">
+            <div class="success-ring"></div>
+            <svg class="success-check" width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M12 24l9 9 15-18" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h2>Kontrakten er signert!</h2>
+          <p>Takk, <strong id="success-name">—</strong>. Signeringen er registrert og kontrakten er nå gyldig.</p>
+          <div class="signed-meta">
+            <span>Signert:</span>
+            <strong id="success-date">—</strong>
+          </div>
+          <div class="signed-sig-preview" id="signed-sig-preview" style="display:none">
+            <p class="preview-label">Din signatur:</p>
+            <img id="signed-sig-img" alt="Signatur" class="sig-preview-img">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/sign.js"></script>
+</body>
+</html>
