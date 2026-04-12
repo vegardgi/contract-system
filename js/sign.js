@@ -12,6 +12,9 @@ let typedFont  = 'Dancing Script';
 
 /* ─── Init ───────────────────────────────────────────────────── */
 async function init() {
+  // Kick off Kalam font load immediately so it's ready when we need it
+  const kalamReady = document.fonts.load('700 32px "Kalam"').catch(() => Promise.resolve());
+
   const id = new URLSearchParams(window.location.search).get('id');
   if (!id) { showState('not-found'); return; }
 
@@ -22,8 +25,12 @@ async function init() {
     return;
   }
 
-  if (contract.status === 'signed')  { showSignedView(contract); return; }
-  if (contract.status !== 'sent')    { showState('not-found');      return; }
+  if (contract.status === 'signed') {
+    await kalamReady;          // wait for font before showing handwriting
+    showSignedView(contract);
+    return;
+  }
+  if (contract.status !== 'sent') { showState('not-found'); return; }
 
   document.getElementById('sign-contract-title').textContent = contract.title || 'Uten tittel';
   document.getElementById('sign-recipient-name').textContent = contract.recipient?.name || '—';
@@ -72,6 +79,15 @@ function showSignedView(c) {
   pdfBtn.onclick = function () { downloadContractPdf(c, c.signature?.data, this); };
 
   showState('already-signed');
+
+  // Force repaint so Kalam renders correctly after the element becomes visible
+  requestAnimationFrame(() => {
+    const el = document.querySelector('#state-already-signed .sender-sig-display');
+    if (el) {
+      void el.offsetWidth;
+      el.style.fontFamily = "'Kalam', cursive";
+    }
+  });
 }
 
 /* ─── Tabs ───────────────────────────────────────────────────── */
