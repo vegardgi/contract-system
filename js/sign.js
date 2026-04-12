@@ -318,6 +318,15 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
       await new Promise(r => setTimeout(r, 900));
     }
 
+    // Preload signature image into browser cache BEFORE building the DOM
+    if (sigDataUrl) {
+      await new Promise(r => {
+        const pre = new Image();
+        pre.onload = r; pre.onerror = r;
+        pre.src = sigDataUrl;
+      });
+    }
+
     const wrap = document.createElement('div');
     wrap.style.cssText = [
       'position:fixed', 'left:-9999px', 'top:0',
@@ -390,9 +399,7 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
               <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${escapeHtml(signedDate)}</div>
             </div>
             ${sigDataUrl
-              ? `<div style="background:#FDFAF6;border:1.5px solid #F0DDD0;border-radius:7px;padding:10px 14px;display:inline-block">
-                   <img src="${sigDataUrl}" style="max-height:60px;max-width:220px;display:block">
-                 </div>`
+              ? `<div style="background:#FDFAF6;border:1.5px solid #F0DDD0;border-radius:7px;padding:10px 14px;display:inline-block;width:244px;height:80px;background-image:url('${sigDataUrl}');background-size:contain;background-repeat:no-repeat;background-position:left center;"></div>`
               : ''}
           </div>
 
@@ -423,15 +430,7 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
     `;
 
     document.body.appendChild(wrap);
-
-    // Wait for all images inside the render container to fully load
-    await Promise.all(
-      Array.from(wrap.querySelectorAll('img')).map(img =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise(r => { img.onload = r; img.onerror = r; })
-      )
-    );
+    await new Promise(r => setTimeout(r, 120)); // let browser paint background-images
 
     const canvas = await html2canvas(wrap, {
       scale: 2,
@@ -439,7 +438,7 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
-      imageTimeout: 0,
+      imageTimeout: 15000,
     });
 
     document.body.removeChild(wrap);
