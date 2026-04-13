@@ -254,7 +254,12 @@
             </div>
 
             <div class="sidebar-block">
-              <h4 class="sidebar-heading">Maler</h4>
+              <div class="sidebar-heading-row">
+                <h4 class="sidebar-heading">Maler</h4>
+                <button class="btn-icon-subtle" id="btn-edit-templates" title="Rediger maler">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8.5 8.5L2 14l.5-3.5L11 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
               <button class="template-btn" data-template="service">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M5 5h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
                 Tjenesteavtale
@@ -326,6 +331,33 @@
 
   <!-- ─── Toast ─────────────────────────────────────────────────────── -->
   <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ─── Template Editor Modal ────────────────────────────────────── -->
+  <div class="modal-overlay" id="tpl-modal-overlay" style="display:none">
+    <div class="modal tpl-modal" role="dialog" aria-modal="true">
+      <div class="tpl-modal-header">
+        <h3>Rediger maler</h3>
+        <button class="btn-icon-subtle" id="btn-close-tpl-modal">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="tpl-tabs">
+        <button class="tpl-tab active" data-tpl="service">Tjenesteavtale</button>
+        <button class="tpl-tab" data-tpl="nda">Taushetserklæring</button>
+        <button class="tpl-tab" data-tpl="freelance">Frilanskontrakt</button>
+      </div>
+      <div class="tpl-modal-body">
+        <label class="field-label" for="tpl-title-input">Tittel</label>
+        <input class="field-input" id="tpl-title-input" type="text" placeholder="Malnavn…">
+        <label class="field-label" style="margin-top:14px">Innhold</label>
+        <div class="tpl-content-editor" id="tpl-content-editor" contenteditable="true"></div>
+      </div>
+      <div class="tpl-modal-footer">
+        <button class="btn btn-ghost" id="btn-tpl-reset">Tilbakestill standard</button>
+        <button class="btn btn-primary" id="btn-tpl-save">Lagre mal</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── Delete Modal ───────────────────────────────────────────────── -->
   <div class="modal-overlay" id="modal-overlay" style="display:none">

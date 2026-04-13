@@ -89,6 +89,19 @@ const TEMPLATES = {
   }
 };
 
+/* ─── Template persistence (localStorage) ───────────────────── */
+(function loadSavedTemplates() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('pp_templates') || '{}');
+    Object.keys(saved).forEach(key => {
+      if (TEMPLATES[key]) {
+        if (saved[key].title) TEMPLATES[key].title = saved[key].title;
+        if (saved[key].html)  TEMPLATES[key].html  = saved[key].html;
+      }
+    });
+  } catch (e) {}
+})();
+
 /* ─── State ──────────────────────────────────────────────────── */
 let state = {
   contracts:      [],
@@ -470,6 +483,75 @@ function setupEventListeners() {
       document.getElementById('editor-content').innerHTML     = tpl.html;
       showToast('Mal lastet inn');
     });
+  });
+
+  /* Template editor modal */
+  const TPL_DEFAULTS = JSON.parse(JSON.stringify(
+    { service: { title: TEMPLATES.service.title, html: TEMPLATES.service.html },
+      nda:     { title: TEMPLATES.nda.title,     html: TEMPLATES.nda.html     },
+      freelance:{ title: TEMPLATES.freelance.title, html: TEMPLATES.freelance.html } }
+  ));
+  let tplModalKey = 'service';
+
+  function openTplModal(key) {
+    tplModalKey = key || 'service';
+    document.querySelectorAll('.tpl-tab').forEach(t => t.classList.toggle('active', t.dataset.tpl === tplModalKey));
+    document.getElementById('tpl-title-input').value = TEMPLATES[tplModalKey].title;
+    document.getElementById('tpl-content-editor').innerHTML = TEMPLATES[tplModalKey].html;
+    document.getElementById('tpl-modal-overlay').style.display = 'flex';
+    document.getElementById('tpl-title-input').focus();
+  }
+
+  document.getElementById('btn-edit-templates').addEventListener('click', () => openTplModal('service'));
+  document.getElementById('btn-close-tpl-modal').addEventListener('click', () => {
+    document.getElementById('tpl-modal-overlay').style.display = 'none';
+  });
+  document.getElementById('tpl-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('tpl-modal-overlay'))
+      document.getElementById('tpl-modal-overlay').style.display = 'none';
+  });
+
+  document.querySelectorAll('.tpl-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Save current before switching
+      TEMPLATES[tplModalKey].title = document.getElementById('tpl-title-input').value.trim() || TEMPLATES[tplModalKey].title;
+      TEMPLATES[tplModalKey].html  = document.getElementById('tpl-content-editor').innerHTML;
+      openTplModal(tab.dataset.tpl);
+    });
+  });
+
+  document.getElementById('btn-tpl-save').addEventListener('click', () => {
+    const title = document.getElementById('tpl-title-input').value.trim();
+    const html  = document.getElementById('tpl-content-editor').innerHTML;
+    if (!title) { showToast('Tittel kan ikke være tom', 'error'); return; }
+    TEMPLATES[tplModalKey].title = title;
+    TEMPLATES[tplModalKey].html  = html;
+    // Update sidebar button label
+    const sidebarBtn = document.querySelector(`.template-btn[data-template="${tplModalKey}"]`);
+    if (sidebarBtn) sidebarBtn.lastChild.textContent = ' ' + title;
+    // Persist to localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('pp_templates') || '{}');
+      saved[tplModalKey] = { title, html };
+      localStorage.setItem('pp_templates', JSON.stringify(saved));
+    } catch (e) {}
+    showToast('Mal lagret', 'success');
+    document.getElementById('tpl-modal-overlay').style.display = 'none';
+  });
+
+  document.getElementById('btn-tpl-reset').addEventListener('click', () => {
+    if (!confirm('Tilbakestille til standard innhold?')) return;
+    TEMPLATES[tplModalKey].title = TPL_DEFAULTS[tplModalKey].title;
+    TEMPLATES[tplModalKey].html  = TPL_DEFAULTS[tplModalKey].html;
+    document.getElementById('tpl-title-input').value = TPL_DEFAULTS[tplModalKey].title;
+    document.getElementById('tpl-content-editor').innerHTML = TPL_DEFAULTS[tplModalKey].html;
+    // Remove from localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('pp_templates') || '{}');
+      delete saved[tplModalKey];
+      localStorage.setItem('pp_templates', JSON.stringify(saved));
+    } catch (e) {}
+    showToast('Mal tilbakestilt');
   });
 
   /* Filter */
