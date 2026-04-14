@@ -291,7 +291,7 @@ async function getSenderSigDataUrl() {
       resolve(window._senderSigCache);
     };
     img.onerror = () => resolve(null);
-    img.src = 'sign.png';
+    img.src = 'sign2.png';
   });
 }
 
