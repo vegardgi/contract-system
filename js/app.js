@@ -206,33 +206,7 @@ async function renderDashboard() {
     .sort((a, b) => b.createdAt - a.createdAt)
     .forEach(c => grid.appendChild(createCard(c)));
 
-  // Archive bar
-  const archiveBar = document.getElementById('archive-bar');
-  if (state.currentFilter === 'archived') {
-    archiveBar.style.display = '';
-    archiveBar.innerHTML = `<button class="archive-bar-back" id="btn-archive-back">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Tilbake til aktive kontrakter
-    </button>`;
-    document.getElementById('btn-archive-back').onclick = () => {
-      state.currentFilter = 'all';
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
-      renderDashboard();
-    };
-  } else if (archived.length > 0) {
-    archiveBar.style.display = '';
-    archiveBar.innerHTML = `<button class="archive-bar-link" id="btn-show-archive">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="5" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 5l2-3h10l2 3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      ${archived.length} arkivert${archived.length === 1 ? '' : 'e'} kontrakt${archived.length === 1 ? '' : 'er'}
-    </button>`;
-    document.getElementById('btn-show-archive').onclick = () => {
-      state.currentFilter = 'archived';
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      renderDashboard();
-    };
-  } else {
-    archiveBar.style.display = 'none';
-  }
+  document.getElementById('archive-bar').style.display = 'none';
 }
 
 function createCard(c) {
