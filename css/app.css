@@ -278,9 +278,20 @@ a { color: var(--primary); }
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(200,86,42,0.3);
 }
-.filter-btn--archive { margin-left: auto; color: #7A8AAA; }
-.filter-btn--archive:hover { background: #EDF0F7; color: #5A6A8A; }
-.filter-btn--archive.active { background: #5A6A8A; color: white; box-shadow: 0 1px 3px rgba(90,106,138,0.3); }
+.archive-bar-link, .archive-bar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px 0;
+  transition: color 0.15s;
+}
+.archive-bar-link:hover { color: var(--text); }
+.archive-bar-back { color: var(--primary); }
+.archive-bar-back:hover { color: var(--primary-dark); }
+#archive-bar { margin-top: 12px; }
 
 /* Contracts grid */
 .contracts-grid {
