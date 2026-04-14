@@ -271,7 +271,7 @@ function createCard(c) {
   return card;
 }
 
-function handleCardAction(action, id) {
+async function handleCardAction(action, id) {
   const contract = state.contracts.find(c => c.id === id);
   if (!contract) return;
 
