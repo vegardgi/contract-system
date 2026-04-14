@@ -1177,13 +1177,11 @@ a { color: var(--primary); }
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
-.sender-sig-display {
-  font-family: 'Kalam', cursive;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.25;
-  color: #2C1A0E;
+.sender-sig-img {
   display: block;
+  max-height: 72px;
+  max-width: 210px;
+  object-fit: contain;
   padding: 4px 0;
 }
 .sig-block-meta {

@@ -625,6 +625,24 @@ function setupEventListeners() {
   }, 1000));
 } // end setupEventListeners
 
+/* ─── Sender signature image loader ─────────────────────────── */
+async function getSenderSigDataUrl() {
+  if (window._senderSigCache) return window._senderSigCache;
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      window._senderSigCache = canvas.toDataURL('image/png');
+      resolve(window._senderSigCache);
+    };
+    img.onerror = () => resolve(null);
+    img.src = 'sign.png';
+  });
+}
+
 /* ─── Admin PDF download ─────────────────────────────────────── */
 async function downloadAdminPdf(c, btn) {
   const origHTML = btn ? btn.innerHTML : '';
@@ -643,22 +661,11 @@ async function downloadAdminPdf(c, btn) {
       : '—';
     const sigDataUrl = c.signature?.data || null;
 
-    // Ensure Kalam is loaded for PDF render
-    if (!document.querySelector('link[data-pdf-font]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.dataset.pdfFont = '1';
-      link.href = 'https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap';
-      document.head.appendChild(link);
-      await new Promise(r => setTimeout(r, 900));
-    }
-
-    // Preload signature image so it's in browser cache before html2canvas renders
-    if (sigDataUrl) {
-      await new Promise(r => {
-        const pre = new Image(); pre.onload = r; pre.onerror = r; pre.src = sigDataUrl;
-      });
-    }
+    // Preload customer signature + sender signature image for html2canvas
+    const [senderSigUrl] = await Promise.all([
+      getSenderSigDataUrl(),
+      sigDataUrl ? new Promise(r => { const p = new Image(); p.onload = r; p.onerror = r; p.src = sigDataUrl; }) : Promise.resolve(),
+    ]);
 
     const wrap = document.createElement('div');
     wrap.style.cssText = [
@@ -743,9 +750,9 @@ async function downloadAdminPdf(c, btn) {
               <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Dato</div>
               <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${c.sentAt ? new Date(c.sentAt).toLocaleDateString('no-NO',{day:'numeric',month:'long',year:'numeric'}) : '—'}</div>
             </div>
-            <div style="font-family:'Kalam',cursive;font-weight:700;font-size:1.9rem;color:#2C1A0E;line-height:1.25;padding:4px 0">
-              Vegard Giskehaug
-            </div>
+            ${senderSigUrl
+              ? `<div style="width:180px;height:68px;background-image:url('${senderSigUrl}');background-size:contain;background-repeat:no-repeat;background-position:left center;"></div>`
+              : `<div style="font-size:0.9rem;font-weight:600;color:#2C1A0E">Vegard Giskehaug</div>`}
           </div>
 
         </div>

@@ -12,8 +12,6 @@ let typedFont  = 'Dancing Script';
 
 /* ─── Init ───────────────────────────────────────────────────── */
 async function init() {
-  // Kick off Kalam font load immediately so it's ready when we need it
-  const kalamReady = document.fonts.load('700 32px "Kalam"').catch(() => Promise.resolve());
 
   const id = new URLSearchParams(window.location.search).get('id');
   if (!id) { showState('not-found'); return; }
@@ -26,7 +24,6 @@ async function init() {
   }
 
   if (contract.status === 'signed') {
-    await kalamReady;          // wait for font before showing handwriting
     showSignedView(contract);
     return;
   }
@@ -79,15 +76,6 @@ function showSignedView(c) {
   pdfBtn.onclick = function () { downloadContractPdf(c, c.signature?.data, this); };
 
   showState('already-signed');
-
-  // Force repaint so Kalam renders correctly after the element becomes visible
-  requestAnimationFrame(() => {
-    const el = document.querySelector('#state-already-signed .sender-sig-display');
-    if (el) {
-      void el.offsetWidth;
-      el.style.fontFamily = "'Kalam', cursive";
-    }
-  });
 }
 
 /* ─── Tabs ───────────────────────────────────────────────────── */
@@ -290,6 +278,23 @@ document.getElementById('btn-pdf-success').addEventListener('click', function ()
   if (lastSigned) downloadContractPdf(lastSigned, lastSigDataUrl, this);
 });
 
+async function getSenderSigDataUrl() {
+  if (window._senderSigCache) return window._senderSigCache;
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      window._senderSigCache = canvas.toDataURL('image/png');
+      resolve(window._senderSigCache);
+    };
+    img.onerror = () => resolve(null);
+    img.src = 'sign.png';
+  });
+}
+
 async function downloadContractPdf(c, sigDataUrl, btn) {
   // Show loading state
   const origHTML = btn ? btn.innerHTML : '';
@@ -307,25 +312,11 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
         })
       : '—';
 
-    // Build a hidden render container styled for A4
-    // Ensure Kalam is loaded for PDF render
-    if (!document.querySelector('link[data-pdf-font]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.dataset.pdfFont = '1';
-      link.href = 'https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap';
-      document.head.appendChild(link);
-      await new Promise(r => setTimeout(r, 900));
-    }
-
-    // Preload signature image into browser cache BEFORE building the DOM
-    if (sigDataUrl) {
-      await new Promise(r => {
-        const pre = new Image();
-        pre.onload = r; pre.onerror = r;
-        pre.src = sigDataUrl;
-      });
-    }
+    // Preload customer + sender signature images for html2canvas
+    const [senderSigUrl] = await Promise.all([
+      getSenderSigDataUrl(),
+      sigDataUrl ? new Promise(r => { const p = new Image(); p.onload = r; p.onerror = r; p.src = sigDataUrl; }) : Promise.resolve(),
+    ]);
 
     const wrap = document.createElement('div');
     wrap.style.cssText = [
@@ -414,9 +405,9 @@ async function downloadContractPdf(c, sigDataUrl, btn) {
               <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B89080">Dato</div>
               <div style="font-size:0.85rem;font-weight:600;margin-top:2px">${escapeHtml(senderDate)}</div>
             </div>
-            <div style="font-family:'Kalam',cursive;font-weight:700;font-size:1.9rem;color:#2C1A0E;line-height:1.25;padding:4px 0">
-              Vegard Giskehaug
-            </div>
+            ${senderSigUrl
+              ? `<div style="width:180px;height:68px;background-image:url('${senderSigUrl}');background-size:contain;background-repeat:no-repeat;background-position:left center;"></div>`
+              : `<div style="font-size:0.9rem;font-weight:600;color:#2C1A0E">Vegard Giskehaug</div>`}
           </div>
 
         </div>
