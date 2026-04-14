@@ -278,6 +278,9 @@ a { color: var(--primary); }
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(200,86,42,0.3);
 }
+.filter-btn--archive { margin-left: auto; color: #7A8AAA; }
+.filter-btn--archive:hover { background: #EDF0F7; color: #5A6A8A; }
+.filter-btn--archive.active { background: #5A6A8A; color: white; box-shadow: 0 1px 3px rgba(90,106,138,0.3); }
 
 /* Contracts grid */
 .contracts-grid {
@@ -316,6 +319,8 @@ a { color: var(--primary); }
 
 .contract-card--signed::before { background: var(--success); opacity: 1; }
 .contract-card--sent::before   { background: var(--warning); opacity: 1; }
+.contract-card--archived { opacity: 0.65; }
+.contract-card--archived::before { background: #9AA8BE; opacity: 1; }
 
 .card-header {
   display: flex;
@@ -352,6 +357,7 @@ a { color: var(--primary); }
 }
 .card-btn:hover { background: var(--bg); color: var(--text); }
 .card-btn--danger:hover { background: var(--danger-light); color: var(--danger); }
+.card-btn--archive:hover { background: #EDF0F7; color: #5A6A8A; }
 
 /* Empty state */
 .empty-state {

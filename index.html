@@ -98,6 +98,10 @@
           <button class="filter-btn" data-filter="draft">Utkast</button>
           <button class="filter-btn" data-filter="sent">Sendt</button>
           <button class="filter-btn" data-filter="signed">Signert</button>
+          <button class="filter-btn filter-btn--archive" data-filter="archived">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="margin-right:4px;vertical-align:-2px"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l2-3h10l2 3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Arkiv
+          </button>
         </div>
 
         <div id="contracts-grid" class="contracts-grid">
@@ -359,17 +363,17 @@
     </div>
   </div>
 
-  <!-- ─── Delete Modal ───────────────────────────────────────────────── -->
+  <!-- ─── Delete Modal (permanent, only from archive) ──────────────── -->
   <div class="modal-overlay" id="modal-overlay" style="display:none">
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modal-icon modal-icon--danger">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 3h6M4 6h16M10 11v6M14 11v6M5 6l1 14a1 1 0 001 1h10a1 1 0 001-1L19 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <h3>Slett kontrakt</h3>
-      <p>Er du sikker? Denne handlingen kan ikke angres.</p>
+      <h3>Slett kontrakt permanent</h3>
+      <p>Kontrakten slettes for godt og kan ikke gjenopprettes.</p>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="btn-cancel-delete">Avbryt</button>
-        <button class="btn btn-danger" id="btn-confirm-delete">Slett kontrakt</button>
+        <button class="btn btn-danger" id="btn-confirm-delete">Slett permanent</button>
       </div>
     </div>
   </div>

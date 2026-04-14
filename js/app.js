@@ -178,15 +178,24 @@ async function renderDashboard() {
     state.contracts = [];
   }
 
-  const grid     = document.getElementById('contracts-grid');
-  const emptyEl  = document.getElementById('empty-state');
-  const filtered = state.currentFilter === 'all'
-    ? state.contracts
-    : state.contracts.filter(c => c.status === state.currentFilter);
+  const grid    = document.getElementById('contracts-grid');
+  const emptyEl = document.getElementById('empty-state');
 
-  document.getElementById('stat-total').textContent  = state.contracts.length;
-  document.getElementById('stat-sent').textContent   = state.contracts.filter(c => c.status === 'sent').length;
-  document.getElementById('stat-signed').textContent = state.contracts.filter(c => c.status === 'signed').length;
+  const active   = state.contracts.filter(c => !c.archived);
+  const archived = state.contracts.filter(c =>  c.archived);
+
+  let filtered;
+  if (state.currentFilter === 'archived') {
+    filtered = archived;
+  } else if (state.currentFilter === 'all') {
+    filtered = active;
+  } else {
+    filtered = active.filter(c => c.status === state.currentFilter);
+  }
+
+  document.getElementById('stat-total').textContent  = active.length;
+  document.getElementById('stat-sent').textContent   = active.filter(c => c.status === 'sent').length;
+  document.getElementById('stat-signed').textContent = active.filter(c => c.status === 'signed').length;
 
   [...grid.children].forEach(ch => { if (ch.id !== 'empty-state') ch.remove(); });
 
@@ -200,7 +209,7 @@ async function renderDashboard() {
 
 function createCard(c) {
   const card = document.createElement('div');
-  card.className = `contract-card contract-card--${c.status}`;
+  card.className = `contract-card contract-card--${c.status}${c.archived ? ' contract-card--archived' : ''}`;
   card.dataset.id = c.id;
 
   const badgeText = { draft: 'Utkast', sent: 'Sendt', signed: 'Signert' }[c.status];
@@ -229,18 +238,27 @@ function createCard(c) {
     <div class="card-footer">
       <span class="card-date">${formatDate(c.createdAt)}</span>
       <div class="card-actions">
-        ${c.status !== 'signed' ? `<button class="card-btn" data-action="edit" title="Rediger">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10l1-3 7-7 2 2-7 7-3 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-        </button>` : ''}
-        ${c.status === 'draft' ? `<button class="card-btn" data-action="send" title="Send">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 12l1.5-4.5L11 2l1 1-8 6.5-3 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-        </button>` : ''}
-        ${c.status === 'sent' ? `<button class="card-btn" data-action="copy-link" title="Kopier signeringslenke">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 7a3 3 0 004.2-.2l1.4-1.3a3 3 0 00-4.2-4.3L5.6 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9 7a3 3 0 00-4.2.2L3.4 8.6a3 3 0 004.2 4.3l.8-.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        </button>` : ''}
-        <button class="card-btn card-btn--danger" data-action="delete" title="Slett">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M5 4V3h4v1M5.5 7v3M8.5 7v3M3 4l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        </button>
+        ${c.archived ? `
+          <button class="card-btn" data-action="restore" title="Gjenopprett">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 105 -5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="card-btn card-btn--danger" data-action="delete" title="Slett permanent">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M5 4V3h4v1M5.5 7v3M8.5 7v3M3 4l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </button>
+        ` : `
+          ${c.status !== 'signed' ? `<button class="card-btn" data-action="edit" title="Rediger">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10l1-3 7-7 2 2-7 7-3 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>` : ''}
+          ${c.status === 'draft' ? `<button class="card-btn" data-action="send" title="Send">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 12l1.5-4.5L11 2l1 1-8 6.5-3 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          </button>` : ''}
+          ${c.status === 'sent' ? `<button class="card-btn" data-action="copy-link" title="Kopier signeringslenke">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 7a3 3 0 004.2-.2l1.4-1.3a3 3 0 00-4.2-4.3L5.6 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9 7a3 3 0 00-4.2.2L3.4 8.6a3 3 0 004.2 4.3l.8-.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </button>` : ''}
+          <button class="card-btn card-btn--archive" data-action="archive" title="Arkivér">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="5" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 5l2-3h10l2 3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
+        `}
       </div>
     </div>`;
 
@@ -262,6 +280,22 @@ function handleCardAction(action, id) {
   else if (action === 'copy-link') {
     copyToClipboard(buildSigningLink(id));
     showToast('Signeringslenke kopiert!', 'success');
+  } else if (action === 'archive') {
+    try {
+      await api.update(id, { archived: true });
+      await renderDashboard();
+      showToast('Kontrakt arkivert', 'success');
+    } catch {
+      showToast('Kunne ikke arkivere kontrakt', 'danger');
+    }
+  } else if (action === 'restore') {
+    try {
+      await api.update(id, { archived: false });
+      await renderDashboard();
+      showToast('Kontrakt gjenopprettet', 'success');
+    } catch {
+      showToast('Kunne ikke gjenopprette kontrakt', 'danger');
+    }
   } else if (action === 'delete') {
     state.deleteTargetId = id;
     document.getElementById('modal-overlay').style.display = 'flex';
